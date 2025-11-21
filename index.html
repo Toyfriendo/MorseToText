@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morse Code Transmission Console</title>
+  <style>
+    :root {
+      --bg: #020410;
+      --bg-panel: rgba(6, 18, 40, 0.96);
+      --bg-panel-soft: rgba(6, 18, 40, 0.85);
+      --accent: #00e5ff;
+      --accent-soft: rgba(0, 229, 255, 0.3);
+      --accent-strong: rgba(0, 229, 255, 0.7);
+      --accent-warm: #ffb74d;
+      --text-main: #f4fbff;
+      --text-muted: #9bb3d4;
+      --border: rgba(0, 229, 255, 0.4);
+      --danger: #ff5252;
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at top, #152344 0, #030717 52%, #000 100%);
+      color: var(--text-main);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+    }
+
+    .console {
+      width: 100%;
+      max-width: 1120px;
+      padding: 26px 22px 22px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      background: linear-gradient(
+        135deg,
+        var(--bg-panel),
+        var(--bg-panel-soft)
+      );
+      box-shadow:
+        0 26px 60px rgba(0, 0, 0, 0.9),
+        0 0 50px rgba(0, 229, 255, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .console::before,
+    .console::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.25;
+    }
+
+    .console::before {
+      background: radial-gradient(
+        circle at 10% 0,
+        rgba(0, 229, 255, 0.4),
+        transparent 55%
+      );
+      mix-blend-mode: screen;
+    }
+
+    .console::after {
+      background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.04),
+        rgba(255, 255, 255, 0.04) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      mix-blend-mode: soft-light;
+    }
+
+    .console-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    header.console-header {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .console-title {
+      font-size: clamp(1.3rem, 2vw, 1.6rem);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin: 0 0 4px;
+      color: var(--accent);
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+    }
+
+    .console-subtitle {
+      margin: 0;
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .signal-bar {
+      width: 58px;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 229, 255, 0.8),
+        transparent
+      );
+      animation: sweep 2.6s linear infinite;
+    }
+
+    @keyframes sweep {
+      0% {
+        transform: translateX(-26px);
+        opacity: 0;
+      }
+      40% {
+        opacity: 1;
+      }
+      60% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(26px);
+        opacity: 0;
+      }
+    }
+
+    /* Letter keys panel */
+
+    .keys-panel {
+      padding: 18px 14px 16px;
+      border-radius: var(--radius-md);
+      background: radial-gradient(
+          circle at top,
+          rgba(0, 229, 255, 0.09),
+          transparent 65%
+        ),
+        rgba(2, 7, 20, 0.94);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .keys-panel::before {
+      content: "";
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.035) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.035) 1px,
+          transparent 1px
+        );
+      background-size: 36px 36px;
+      opacity: 0.5;
+      mix-blend-mode: soft-light;
+    }
+
+    .key-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(66px, 1fr));
+      gap: 14px 10px;
+      justify-items: center;
+    }
+
+    .letter-key {
+      position: relative;
+      width: 76px;
+      max-width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      border: none;
+      padding: 0;
+      background: radial-gradient(
+        circle at 30% 20%,
+        rgba(0, 229, 255, 0.55),
+        #050916 68%
+      );
+      box-shadow:
+        0 0 0 1px rgba(0, 229, 255, 0.4),
+        0 10px 18px rgba(0, 0, 0, 0.85);
+      color: var(--text-main);
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        background 0.18s ease;
+    }
+
+    .letter-key .key-ring {
+      position: absolute;
+      inset: 8%;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 229, 255, 0.35);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+      opacity: 0.75;
+    }
+
+    .letter-key .key-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
+    }
+
+    .letter-key .letter {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+    }
+
+    .letter-key .morse {
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent-warm);
+    }
+
+    .letter-key:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow:
+        0 0 18px rgba(0, 229, 255, 0.7),
+        0 14px 26px rgba(0, 0, 0, 0.9);
+    }
+
+    .letter-key.active {
+      background: radial-gradient(
+        circle at 25% 25%,
+        rgba(0, 229, 255, 0.85),
+        #06172f 72%
+      );
+      box-shadow:
+        0 0 24px rgba(0, 229, 255, 0.95),
+        0 18px 32px rgba(0, 0, 0, 0.95);
+    }
+
+    .letter-key.active .morse {
+      color: #ffe082;
+    }
+
+    .legend {
+      position: relative;
+      z-index: 1;
+      margin-top: 12px;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      gap: 22px;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 18px;
+      height: 3px;
+      margin-right: 8px;
+      border-radius: 999px;
+      vertical-align: middle;
+    }
+
+    .legend span.dot::before {
+      background: var(--accent);
+    }
+
+    .legend span.dash::before {
+      background: var(--accent-warm);
+    }
+
+    /* IO panel */
+
+    .io-panel {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(0, 229, 255, 0.25);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .io-column {
+      background: radial-gradient(
+          circle at top,
+          rgba(0, 229, 255, 0.09),
+          transparent 68%
+        ),
+        rgba(4, 10, 24, 0.96);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .io-column::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at bottom right,
+        rgba(0, 229, 255, 0.09),
+        transparent 60%
+      );
+      mix-blend-mode: screen;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .io-header {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .io-title {
+      font-size: 0.86rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .io-sub {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .label-pill {
+      position: relative;
+      z-index: 1;
+      align-self: flex-start;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(0, 229, 255, 0.5);
+      padding: 2px 10px;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: radial-gradient(
+        circle at top,
+        rgba(0, 229, 255, 0.25),
+        rgba(5, 17, 36, 0.95)
+      );
+    }
+
+    textarea {
+      position: relative;
+      z-index: 1;
+      margin-top: 2px;
+      width: 100%;
+      min-height: 146px;
+      border-radius: 10px;
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      background: radial-gradient(
+          circle at top left,
+          rgba(0, 229, 255, 0.08),
+          transparent 58%
+        ),
+        rgba(3, 8, 20, 0.96);
+      color: var(--text-main);
+      font: 0.86rem/1.45 "SF Mono", ui-monospace, Menlo, Monaco,
+        "Roboto Mono", monospace;
+      padding: 10px 11px;
+      resize: vertical;
+      outline: none;
+      box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.9);
+      caret-color: var(--accent);
+    }
+
+    textarea::placeholder {
+      color: rgba(155, 179, 212, 0.65);
+    }
+
+    textarea:focus {
+      border-color: var(--accent-strong);
+      box-shadow:
+        0 0 0 1px rgba(0, 229, 255, 0.45),
+        0 0 20px rgba(0, 229, 255, 0.4),
+        inset 0 0 14px rgba(0, 0, 0, 0.95);
+    }
+
+    .btn-row {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .console-btn {
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(0, 229, 255, 0.6);
+      padding: 8px 18px;
+      font-size: 0.8rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      background: radial-gradient(
+        circle at top,
+        rgba(0, 229, 255, 0.35),
+        rgba(3, 12, 30, 0.98)
+      );
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition:
+        transform 0.16s ease,
+        box-shadow 0.16s ease,
+        background 0.16s ease,
+        border-color 0.16s ease;
+    }
+
+    .console-btn span.icon {
+      font-size: 0.9rem;
+    }
+
+    .console-btn:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 0 16px rgba(0, 229, 255, 0.7),
+        0 10px 20px rgba(0, 0, 0, 0.9);
+      background: radial-gradient(
+        circle at top,
+        rgba(0, 229, 255, 0.55),
+        rgba(3, 12, 30, 0.98)
+      );
+    }
+
+    .console-btn:active {
+      transform: translateY(0);
+      box-shadow:
+        0 0 10px rgba(0, 229, 255, 0.7),
+        0 3px 10px rgba(0, 0, 0, 0.85);
+    }
+
+    .console-btn.secondary {
+      border-color: rgba(255, 138, 101, 0.7);
+      background: radial-gradient(
+        circle at top,
+        rgba(255, 138, 101, 0.55),
+        rgba(17, 11, 6, 0.98)
+      );
+    }
+
+    .helper {
+      margin-top: 6px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .helper code {
+      font-family: "SF Mono", ui-monospace, Menlo, Monaco, "Roboto Mono",
+        monospace;
+      font-size: 0.72rem;
+      padding: 1px 5px;
+      border-radius: 10px;
+      background: rgba(3, 13, 28, 0.9);
+      border: 1px solid rgba(0, 229, 255, 0.35);
+    }
+
+    /* Responsive */
+
+    @media (max-width: 900px) {
+      .io-panel {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .console {
+        padding: 22px 16px 18px;
+      }
+
+      .keys-panel {
+        padding-inline: 10px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .key-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px 8px;
+      }
+
+      .letter-key {
+        width: 64px;
+      }
+
+      .legend {
+        flex-direction: column;
+        gap: 4px;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .key-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .letter-key {
+        width: 60px;
+      }
+
+      .console-title {
+        letter-spacing: 0.16em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="console">
+    <div class="console-inner">
+      <header class="console-header">
+        <h1 class="console-title">
+          MORSE CODE TRANSMISSION CONSOLE
+        </h1>
+        <p class="console-subtitle">
+          <span class="signal-bar"></span>
+          INTERACTIVE ENCODER DECODER
+        </p>
+      </header>
+
+      <section class="keys-panel" aria-label="Morse code alphabet keys">
+        <div id="keyGrid" class="key-grid"></div>
+        <div class="legend">
+          <span class="dot">DOT short signal</span>
+          <span class="dash">DASH long signal</span>
+        </div>
+      </section>
+
+      <section class="io-panel">
+        <div class="io-column">
+          <div class="io-header">
+            <div>
+              <div class="io-title">Alphabet input</div>
+              <div class="io-sub">Type text to encode into Morse</div>
+            </div>
+          </div>
+          <div class="label-pill">Type letters here</div>
+          <textarea
+            id="alphabetInput"
+            spellcheck="false"
+            placeholder="Type A Z to see the circuit keys light up..."
+            aria-label="Alphabet input"
+          ></textarea>
+        </div>
+
+        <div class="io-column">
+          <div class="io-header">
+            <div>
+              <div class="io-title">Morse output</div>
+              <div class="io-sub">Encode or decode Morse sequences</div>
+            </div>
+          </div>
+          <div class="label-pill">Morse code results</div>
+          <textarea
+            id="morseOutput"
+            spellcheck="false"
+            placeholder="Results appear here. Use space between letters, / between words."
+            aria-label="Morse code output"
+          ></textarea>
+        </div>
+      </section>
+
+      <div class="btn-row">
+        <button id="toMorse" class="console-btn" type="button">
+          <span class="icon">↓</span>
+          Convert to Morse
+        </button>
+        <button id="toText" class="console-btn" type="button">
+          <span class="icon">↑</span>
+          Convert to Text
+        </button>
+        <button
+          id="clearAll"
+          class="console-btn secondary"
+          type="button"
+        >
+          <span class="icon">✕</span>
+          Clear all
+        </button>
+      </div>
+
+      <p class="helper">
+        Decoder hint
+        <code>.  .-.. --- ...- .  -.-. --- -.. .</code>
+        → type it in the Morse box and hit Convert to Text
+      </p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const alphaToMorse = {
+        A: ".-",
+        B: "-...",
+        C: "-.-.",
+        D: "-..",
+        E: ".",
+        F: "..-.",
+        G: "--.",
+        H: "....",
+        I: "..",
+        J: ".---",
+        K: "-.-",
+        L: ".-..",
+        M: "--",
+        N: "-.",
+        O: "---",
+        P: ".--.",
+        Q: "--.-",
+        R: ".-.",
+        S: "...",
+        T: "-",
+        U: "..-",
+        V: "...-",
+        W: ".--",
+        X: "-..-",
+        Y: "-.--",
+        Z: "--..",
+        0: "-----",
+        1: ".----",
+        2: "..---",
+        3: "...--",
+        4: "....-",
+        5: ".....",
+        6: "-....",
+        7: "--...",
+        8: "---..",
+        9: "----."
+      };
+
+      const morseToAlpha = {};
+      Object.keys(alphaToMorse).forEach(function (char) {
+        const code = alphaToMorse[char];
+        morseToAlpha[code] = char;
+      });
+
+      const lettersForGrid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+      const keyGrid = document.getElementById("keyGrid");
+      const alphabetInput = document.getElementById("alphabetInput");
+      const morseOutput = document.getElementById("morseOutput");
+      const toMorseBtn = document.getElementById("toMorse");
+      const toTextBtn = document.getElementById("toText");
+      const clearBtn = document.getElementById("clearAll");
+
+      lettersForGrid.forEach(function (letter) {
+        const code = alphaToMorse[letter];
+        const key = document.createElement("button");
+        key.type = "button";
+        key.className = "letter-key";
+        key.dataset.letter = letter;
+        key.innerHTML =
+          '<span class="key-ring"></span>' +
+          '<span class="key-inner">' +
+          '<span class="letter">' +
+          letter +
+          "</span>" +
+          '<span class="morse">' +
+          code +
+          "</span>" +
+          "</span>";
+        key.addEventListener("click", function () {
+          alphabetInput.value += letter;
+          alphabetInput.focus();
+          highlightLetters(alphabetInput.value);
+        });
+        keyGrid.appendChild(key);
+      });
+
+      function highlightLetters(text) {
+        const uniqueLetters = new Set(
+          text
+            .toUpperCase()
+            .split("")
+            .filter(function (ch) {
+              return alphaToMorse[ch];
+            })
+        );
+
+        const keys = keyGrid.querySelectorAll(".letter-key");
+        keys.forEach(function (key) {
+          const letter = key.dataset.letter;
+          if (uniqueLetters.has(letter)) {
+            key.classList.add("active");
+          } else {
+            key.classList.remove("active");
+          }
+        });
+      }
+
+      function convertToMorse() {
+        const text = alphabetInput.value.toUpperCase();
+        const parts = [];
+
+        for (let i = 0; i < text.length; i += 1) {
+          const ch = text[i];
+
+          if (ch === " " || ch === "\n" || ch === "\t") {
+            if (parts.length && parts[parts.length - 1] !== "/") {
+              parts.push("/");
+            }
+          } else if (alphaToMorse[ch]) {
+            parts.push(alphaToMorse[ch]);
+          }
+          // ignore any unknown characters
+        }
+
+        morseOutput.value = parts.join(" ");
+      }
+
+      function convertToText() {
+        const raw = morseOutput.value.trim();
+        if (!raw) {
+          alphabetInput.value = "";
+          highlightLetters("");
+          return;
+        }
+
+        const tokens = raw.split(/\s+/);
+        let result = "";
+
+        tokens.forEach(function (token) {
+          if (token === "/" || token === "|" || token === "//") {
+            if (!result.endsWith(" ")) {
+              result += " ";
+            }
+          } else if (morseToAlpha[token]) {
+            result += morseToAlpha[token];
+          } else {
+            result += "?";
+          }
+        });
+
+        alphabetInput.value = result;
+        highlightLetters(result);
+      }
+
+      alphabetInput.addEventListener("input", function () {
+        highlightLetters(alphabetInput.value);
+      });
+
+      toMorseBtn.addEventListener("click", convertToMorse);
+      toTextBtn.addEventListener("click", convertToText);
+
+      clearBtn.addEventListener("click", function () {
+        alphabetInput.value = "";
+        morseOutput.value = "";
+        highlightLetters("");
+        alphabetInput.focus();
+      });
+    });
+  </script>
+</body>
+</html>
